@@ -90,6 +90,19 @@ namespace EquationSolver
                 matrix[i, n] = -coeffs[i][n];
             }
 
+        // Populate matrix with constants
+            for (int i = 0; i < n; i++)
+            {
+                string constantStr = await DisplayPromptAsync($"Equation {i+1}", $"Enter constant for equation {i+1}");
+                double constant;
+                if (!double.TryParse(constantStr, out constant))
+                {
+                    await DisplayAlert("Error", "Please enter a valid number", "OK");
+                    return null;
+                }
+                matrix[i, n] = -constant;
+            }
+            
             // Solve matrix
             matrix.GaussianElimination();
 
@@ -104,7 +117,7 @@ namespace EquationSolver
         }
     }
 
-    // Represents a matrix of doubles
+        // Represents a matrix of doubles
     class Matrix
     {
         private double[,] data;
@@ -115,4 +128,79 @@ namespace EquationSolver
         public Matrix(int rows, int columns)
         {
             Rows = rows;
-            Columns =
+            Columns = columns;
+            data = new double[rows, columns];
+        }
+
+        public double this[int row, int column]
+        {
+            get { return data[row, column]; }
+            set { data[row, column] = value; }
+        }
+
+        // Solves the matrix using Gaussian elimination
+        public void GaussianElimination()
+        {
+            int rowCount = Rows;
+            int colCount = Columns;
+
+            // Forward elimination
+            for (int row = 0; row < rowCount - 1; row++)
+            {
+                int maxRowIndex = row;
+                double maxAbsValue = Math.Abs(data[row, row]);
+                for (int i = row + 1; i < rowCount; i++)
+                {
+                    double absValue = Math.Abs(data[i, row]);
+                    if (absValue > maxAbsValue)
+                    {
+                        maxAbsValue = absValue;
+                        maxRowIndex = i;
+                    }
+                }
+
+                if (maxAbsValue < double.Epsilon)
+                {
+                    throw new Exception("Matrix is singular");
+                }
+
+                if (maxRowIndex != row)
+                {
+                    SwapRows(row, maxRowIndex);
+                }
+
+                for (int i = row + 1; i < rowCount; i++)
+                {
+                    double factor = data[i, row] / data[row, row];
+                    for (int j = row + 1; j < colCount; j++)
+                    {
+                        data[i, j] -= factor * data[row, j];
+                    }
+                    data[i, row] = 0;
+                }
+            }
+
+            // Backward substitution
+            for (int row = rowCount - 1; row >= 0; row--)
+            {
+                double sum = 0;
+                for (int j = row + 1; j < colCount - 1; j++)
+                {
+                    sum += data[row, j] * data[j, colCount - 1];
+                }
+                data[row, colCount - 1] = (data[row, colCount - 1] - sum) / data[row, row];
+            }
+        }
+
+        private void SwapRows(int row1, int row2)
+        {
+            for (int j = 0; j < Columns; j++)
+            {
+                double temp = data[row1, j];
+                data[row1, j] = data[row2, j];
+                data[row2, j] = temp;
+            }
+        }
+    }
+}
+
